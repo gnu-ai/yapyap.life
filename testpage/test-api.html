@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<!-- ============================================================================
+  yAp y Ap — Page de test de l'API (test-api.html)
+  ============================================================================
+  Page AUTONOME : aucun fichier externe (le style est intégré). Elle sert à
+  tester TOUTE l'API Rust (127.0.0.1:8080) depuis le navigateur, sans curl.
+
+  Mode d'emploi :
+    1. lancer l'API : YAPYAP_CONFIG=config/yapyap.toml cargo run
+    2. ouvrir ce fichier dans Firefox (double-clic ou Fichier > Ouvrir)
+
+  Sécurité : page locale de développement uniquement. Le jeton de session
+  reste en mémoire JavaScript (variable), jamais stocké sur disque.
+============================================================================ -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test API — yAp y Ap</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f4f5f7; color: #1f2430;
+         padding: 1.5rem; line-height: 1.5; }
+  h1 { font-size: 1.3rem; margin-bottom: .3rem; }
+  h1 small { opacity: .55; font-weight: normal; }
+  .note { color: #6b7382; font-size: .85rem; margin-bottom: 1.2rem; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1rem; align-items: start; }
+  fieldset { background: #fff; border: 1px solid #e2e5ea; border-radius: 8px;
+             padding: 1rem; }
+  legend { font-weight: 600; padding: 0 .4rem; }
+  label { display: block; font-size: .8rem; color: #444; margin: .5rem 0 .15rem; }
+  input { width: 100%; padding: .45rem .6rem; border: 1px solid #cfd4dd;
+          border-radius: 6px; font-size: .95rem; }
+  button { margin-top: .8rem; padding: .5rem 1rem; background: #23304a; color: #fff;
+           border: none; border-radius: 6px; cursor: pointer; font-size: .9rem; }
+  button:hover { background: #31405e; }
+  pre { background: #23292f; color: #c7e6c7; padding: .8rem; border-radius: 6px;
+        font-size: .8rem; overflow: auto; max-height: 200px; white-space: pre-wrap; }
+  .statut { display: inline-block; padding: .1rem .5rem; border-radius: 10px;
+            font-size: .75rem; margin-bottom: .4rem; }
+  .ok    { background: #d9efdc; color: #1e6b2e; }
+  .err   { background: #f6dcdc; color: #8f2429; }
+  #jeton-zone { font-size: .8rem; color: #6b7382; margin-top: .5rem; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<h1>yAp y Ap <small>— page de test de l'API</small></h1>
+<p class="note">API attendue sur http://127.0.0.1:8080 — lancez d'abord
+   <code>YAPYAP_CONFIG=config/yapyap.toml cargo run</code>.</p>
+
+<div class="grille">
+
+  <!-- ========================= SANTE ========================= -->
+  <fieldset id="fs-sante">
+    <legend>Santé</legend>
+    <button onclick="testSante()">GET /api/sante</button>
+    <div id="rep-sante"></div>
+  </fieldset>
+
+  <!-- ========================= INSCRIPTION ========================= -->
+  <fieldset>
+    <legend>Inscription</legend>
+    <label>Pseudonyme</label><input id="ins-pseudo" value="claire">
+    <label>Courriel</label><input id="ins-courriel" value="claire@test.fr">
+    <label>Mot de passe (8 car. min)</label>
+    <input id="ins-mdp" type="password" value="motdepasse123">
+    <label>Latitude</label><input id="ins-lat" value="48.8566">
+    <label>Longitude</label><input id="ins-lon" value="2.3522">
+    <label>Biographie</label><input id="ins-bio" value="Salut !">
+    <button onclick="inscription()">POST /api/auth/inscription</button>
+    <div id="rep-ins"></div>
+  </fieldset>
+
+  <!-- ========================= CONNEXION ========================= -->
+  <fieldset>
+    <legend>Connexion</legend>
+    <label>Courriel</label><input id="co-courriel" value="claire@test.fr">
+    <label>Mot de passe</label>
+    <input id="co-mdp" type="password" value="motdepasse123">
+    <button onclick="connexion()">POST /api/auth/connexion</button>
+    <div id="rep-co"></div>
+    <div id="jeton-zone"></div>
+  </fieldset>
+
+  <!-- ========================= PROFIL ========================= -->
+  <fieldset>
+    <legend>Mon profil</legend>
+    <button onclick="moi()">GET /api/utilisateurs/moi</button>
+    <label>Nouvelle latitude</label><input id="maj-lat" value="48.8600">
+    <label>Nouvelle longitude</label><input id="maj-lon" value="2.3400">
+    <label>Nouvelle biographie</label><input id="maj-bio" value="Mis à jour !">
+    <button onclick="majProfil()">PATCH /api/utilisateurs/moi</button>
+    <div id="rep-moi"></div>
+  </fieldset>
+
+  <!-- ========================= PROCHES ========================= -->
+  <fieldset>
+    <legend>Personnes proches</legend>
+    <label>Latitude</label><input id="pr-lat" value="48.8566">
+    <label>Longitude</label><input id="pr-lon" value="2.3522">
+    <label>Rayon (km)</label><input id="pr-rayon" value="5">
+    <button onclick="proches()">GET /api/utilisateurs/proches</button>
+    <div id="rep-pr"></div>
+  </fieldset>
+
+  <!-- ========================= SORTIES ========================= -->
+  <fieldset>
+    <legend>Créer une sortie</legend>
+    <label>Titre</label><input id="so-titre" value="Pique-nique au parc">
+    <label>Description</label><input id="so-desc" value="Apportez un plat !">
+    <label>Latitude</label><input id="so-lat" value="48.8566">
+    <label>Longitude</label><input id="so-lon" value="2.3522">
+    <label>Début (ISO)</label><input id="so-debut" value="2026-10-15T15:00:00Z">
+    <label>Capacité</label><input id="so-cap" value="10">
+    <button onclick="creerSortie()">POST /api/sorties</button>
+    <div id="rep-so"></div>
+  </fieldset>
+
+  <!-- ========================= SORTIES PROCHES ========================= -->
+  <fieldset>
+    <legend>Sorties à proximité</legend>
+    <label>Latitude</label><input id="sp-lat" value="48.8566">
+    <label>Longitude</label><input id="sp-lon" value="2.3522">
+    <label>Rayon (km)</label><input id="sp-rayon" value="5">
+    <button onclick="sortiesProches()">GET /api/sorties</button>
+    <div id="rep-sp"></div>
+  </fieldset>
+
+  <!-- ========================= PARTICIPER ========================= -->
+  <fieldset>
+    <legend>Participation</legend>
+    <label>Id de la sortie</label><input id="pa-id" value="1">
+    <button onclick="participer()">POST /api/sorties/{id}/participer</button>
+    <div id="rep-pa"></div>
+    <button onclick="retirer()">POST /api/sorties/{id}/retirer</button>
+  </fieldset>
+
+</div>
+
+<script>
+'use strict';
+// ============================================================================
+// Jeton de session : conservé en mémoire (variable). Chaque requête protégée
+// le place dans l'en-tête « Authorization: Bearer <jeton> », exactement
+// comme le ferait une application mobile cliente.
+// ============================================================================
+let JETON = null;
+
+const API = 'http://127.0.0.1:8080';
+
+// Affiche la réponse dans le <div> sous le bouton : statut HTTP + corps.
+function afficher(idDiv, statut, corps) {
+  const zone = document.getElementById(idDiv);
+  const classe = statut >= 200 && statut < 300 ? 'ok' : 'err';
+  zone.innerHTML =
+    '<span class="statut ' + classe + '">HTTP ' + statut + '</span>' +
+    '<pre>' + JSON.stringify(corps, null, 2).replace(/</g, '&lt;') + '</pre>';
+}
+
+// Appel générique : construit la requête fetch, ajoute le jeton si présent,
+// gère JSON (envoi et réception) et affiche le résultat.
+async function appel(methode, chemin, corps, idDiv) {
+  const entetes = { 'Content-Type': 'application/json' };
+  if (JETON) entetes['Authorization'] = 'Bearer ' + JETON;
+  try {
+    const reponse = await fetch(API + chemin, {
+      method: methode,
+      headers: entetes,
+      body: corps ? JSON.stringify(corps) : undefined,
+    });
+    let donnees = null;
+    try { donnees = await reponse.json(); } catch (e) { donnees = '(corps vide)'; }
+    afficher(idDiv, reponse.status, donnees);
+    return { status: reponse.status, data: donnees };
+  } catch (e) {
+    // fetch ne rejette QUE sur erreur réseau (CORS, serveur éteint...)
+    afficher(idDiv, 0, { erreur: 'API injoignable — le serveur Rust est-il lancé ?' });
+  }
+}
+
+// ---- 1. Santé ---------------------------------------------------------------
+async function testSante()  { appel('GET', '/api/sante', null, 'rep-sante'); }
+
+// ---- 2. Inscription ---------------------------------------------------------
+async function inscription() {
+  const corps = {
+    pseudonyme:   document.getElementById('ins-pseudo').value,
+    courriel:     document.getElementById('ins-courriel').value,
+    mot_de_passe: document.getElementById('ins-mdp').value,
+    latitude:     parseFloat(document.getElementById('ins-lat').value),
+    longitude:    parseFloat(document.getElementById('ins-lon').value),
+    biographie:   document.getElementById('ins-bio').value,
+  };
+  appel('POST', '/api/auth/inscription', corps, 'rep-ins');
+}
+
+// ---- 3. Connexion : récupère et mémorise le jeton ---------------------------
+async function connexion() {
+  const r = await appel('POST', '/api/auth/connexion', {
+    courriel:     document.getElementById('co-courriel').value,
+    mot_de_passe: document.getElementById('co-mdp').value,
+  }, 'rep-co');
+  if (r && r.status === 200 && r.data && r.data.jeton) {
+    JETON = r.data.jeton;   // les requêtes suivantes seront authentifiées
+    document.getElementById('jeton-zone').textContent =
+      'Jeton mémorisé : ' + JETON.slice(0, 12) + '… (validité ' + r.data.expire_le + ')';
+  }
+}
+
+// ---- 4. Profil courant / mise à jour ----------------------------------------
+async function moi() { appel('GET', '/api/utilisateurs/moi', null, 'rep-moi'); }
+
+async function majProfil() {
+  const corps = {
+    latitude:   parseFloat(document.getElementById('maj-lat').value),
+    longitude:  parseFloat(document.getElementById('maj-lon').value),
+    biographie: document.getElementById('maj-bio').value,
+  };
+  appel('PATCH', '/api/utilisateurs/moi', corps, 'rep-moi');
+}
+
+// ---- 5. Personnes proches ----------------------------------------------------
+async function proches() {
+  const q = new URLSearchParams({
+    latitude:  document.getElementById('pr-lat').value,
+    longitude: document.getElementById('pr-lon').value,
+    rayon:     document.getElementById('pr-rayon').value,
+  });
+  appel('GET', '/api/utilisateurs/proches?' + q, null, 'rep-pr');
+}
+
+// ---- 6. Sorties ---------------------------------------------------------------
+async function creerSortie() {
+  const corps = {
+    titre:       document.getElementById('so-titre').value,
+    description: document.getElementById('so-desc').value,
+    latitude:    parseFloat(document.getElementById('so-lat').value),
+    longitude:   parseFloat(document.getElementById('so-lon').value),
+    debut:       document.getElementById('so-debut').value,
+    capacite:    parseInt(document.getElementById('so-cap').value, 10),
+  };
+  appel('POST', '/api/sorties', corps, 'rep-so');
+}
+
+async function sortiesProches() {
+  const q = new URLSearchParams({
+    latitude:  document.getElementById('sp-lat').value,
+    longitude: document.getElementById('sp-lon').value,
+    rayon:     document.getElementById('sp-rayon').value,
+  });
+  appel('GET', '/api/sorties?' + q, null, 'rep-sp');
+}
+
+// ---- 7. Participer / se retirer ------------------------------------------------
+async function participer() {
+  const id = document.getElementById('pa-id').value;
+  appel('POST', '/api/sorties/' + id + '/participer', null, 'rep-pa');
+}
+
+async function retirer() {
+  const id = document.getElementById('pa-id').value;
+  appel('POST', '/api/sorties/' + id + '/retirer', null, 'rep-pa');
+}
+</script>
+</body>
+</html>

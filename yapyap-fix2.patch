@@ -1,0 +1,35 @@
+--- a/src/routes/mod.rs	2026-10-10 19:02:45.977188129 +0000
++++ b/src/routes/mod.rs	2026-10-10 19:02:49.708188122 +0000
+@@ -14,6 +14,7 @@
+ use crate::config::Config;
+ use axum::routing::{get, post};
+ use axum::Router;
++use axum::extract::DefaultBodyLimit;
+ use deadpool_postgres::Pool;
+ 
+ /// État applicatif partagé par tous les handlers.
+@@ -27,6 +28,12 @@
+ /// Construit le routeur complet. La structure est « plate » pour la
+ /// lisibilité : chaque ligne EST une route documentée de l'API.
+ pub fn build_router(pool: Pool, cfg: Config) -> Router {
++    // On lit la limite AVANT de déplacer `cfg` dans l'état : une fois la
++    // structure AppState construite, la config n'appartient plus à cette
++    // fonction (sémantique de déplacement de Rust). `usize` est un entier
++    // copié : cette lecture est gratuite.
++    let limite_corps = cfg.http.max_body_bytes;
++
+     let state = AppState { pool, cfg };
+ 
+     Router::new()
+@@ -46,6 +53,11 @@
+                                               .get(outings::proches))
+         .route("/api/sorties/:id/participer", post(outings::participer))
+         .route("/api/sorties/:id/retirer",    post(outings::retirer))
++        // Limitation de la taille des corps de requête : les requêtes JSON
++        // de l'API sont petites ; tout corps dépassant la limite configurée
++        // (http.max_body_bytes) est rejeté en 413 (Payload Too Large) —
++        // protection cohérente avec client_max_body_size de la config Nginx.
++        .layer(DefaultBodyLimit::max(limite_corps))
+         .with_state(state)
+ }
+ 

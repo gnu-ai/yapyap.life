@@ -1,0 +1,41 @@
+yAp y Ap — Page de test de l'API
+=================================
+
+CONTENU
+  test-api.html   page autonome (aucune dépendance) pour tester toute
+                  l'API Rust depuis Firefox, sans curl.
+
+EMPLOI
+  1. Lancer l'API :
+       cd ~/yapyap.life/yapyap
+       YAPYAP_CONFIG=config/yapyap.toml cargo run
+  2. Ouvrir test-api.html dans Firefox (Fichier > Ouvrir un fichier).
+
+PREREQUIS : AUTORISER LE CORS EN DEVELOPPEMENT
+  Une page ouverte en local (origine "file://") n'a pas le droit d'appeler
+  http://127.0.0.1:8080 sans autorisation explicite du serveur (politique
+  same-origin des navigateurs). Deux ajouts dans le projet Rust :
+
+  a) Cargo.toml — ajouter la dépendance :
+       tower-http = { version = "0.5", features = ["cors"] }
+
+  b) src/routes/mod.rs — dans build_router, AVANT .with_state(state) :
+       // CORS de DÉVELOPPEMENT uniquement : permet à la page de test
+       // locale (origine file://) d'appeler l'API. En production, Nginx
+       // et le site vitrine sont de la même origine : cette couche doit
+       // être retirée.
+       .layer(tower_http::cors::CorsLayer::permissive())
+     et l'import correspondant en tête de fichier :
+       use tower_http::cors::CorsLayer;
+
+  c) puis : cargo build && relancer le serveur.
+
+SCENARIO DE TEST COMPLET (cliquer dans l'ordre)
+  1. Santé            -> {"statut":"ok",...}
+  2. Inscription      -> HTTP 201 + profil
+  3. Connexion        -> HTTP 200, jeton mémorisé automatiquement
+  4. Personnes proches-> liste triée par distance (inscrire un 2e compte
+                         à moins de 5 km pour voir la mise en relation)
+  5. Créer une sortie  -> HTTP 201
+  6. Sorties à proximité, participer, retirer
+  Les requêtes 4-7 partent authentifiées (en-tête Bearer) après l'étape 3.

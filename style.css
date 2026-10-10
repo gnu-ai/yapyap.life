@@ -1,0 +1,113 @@
+/* ==============================================================================
+   yAp y Ap — Feuille de style de l'administration (style.css)
+   ==============================================================================
+   Style volontairement sobre et lisible : un back-office doit rester
+   confortable pour des heures de modération. Contraste fort, tables claires,
+   code monospace pour les identifiants techniques.
+   ============================================================================== */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #f4f5f7;
+    color: #1f2430;
+    line-height: 1.5;
+}
+
+/* --- Bandeau supérieur ------------------------------------------------------ */
+header {
+    background: #23304a;
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+header h1 { font-size: 1.2rem; }
+header h1 small { opacity: 0.6; font-weight: normal; }
+header nav { display: flex; gap: 1rem; flex-wrap: wrap; }
+header nav a { color: #cdd6e8; text-decoration: none; padding: 0.2rem 0.4rem; border-radius: 4px; }
+header nav a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.identite { margin-left: auto; font-size: 0.85rem; color: #9fb0d0; }
+.identite a { color: #fff; }
+
+main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+footer { text-align: center; color: #8a92a3; font-size: 0.8rem; padding: 1.5rem; }
+
+/* --- Titres et cartes ------------------------------------------------------- */
+h2 { margin: 1.2rem 0 0.8rem; font-size: 1.15rem; }
+.compteur {
+    background: #dde4f0; color: #23304a; border-radius: 10px;
+    padding: 0.05rem 0.55rem; font-size: 0.85rem; vertical-align: middle;
+}
+.cartes { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.carte {
+    background: #fff; border: 1px solid #e2e5ea; border-radius: 8px;
+    padding: 1rem 1.5rem; min-width: 140px;
+    display: flex; flex-direction: column; align-items: center;
+}
+.carte .valeur { font-size: 1.8rem; font-weight: 700; color: #23304a; }
+.carte .etiquette { font-size: 0.8rem; color: #6b7382; }
+
+/* --- Tables ------------------------------------------------------------------ */
+table {
+    width: 100%; border-collapse: collapse; background: #fff;
+    border: 1px solid #e2e5ea; border-radius: 8px; overflow: hidden;
+    font-size: 0.9rem;
+}
+th, td { padding: 0.55rem 0.7rem; text-align: left; border-bottom: 1px solid #edeff3; }
+th { background: #f0f2f6; font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+tr.inactif td { color: #98a0ae; }
+td.bio { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.mono, .mono { font-family: ui-monospace, monospace; }
+.vide { text-align: center; color: #98a0ae; padding: 1.2rem; }
+
+/* --- Formulaires et boutons -------------------------------------------------- */
+form.recherche { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+form.recherche input[type="text"] {
+    flex: 1; padding: 0.5rem 0.7rem; border: 1px solid #cfd4dd; border-radius: 6px;
+}
+button {
+    padding: 0.4rem 0.8rem; border: 1px solid #cfd4dd; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 0.82rem;
+}
+button:hover { background: #eef1f6; }
+button.dangereux { color: #a4262c; border-color: #d8b4b7; }
+button.dangereux:hover { background: #fbeaea; }
+td.actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+td.actions form { display: inline; }
+
+/* --- Pagination --------------------------------------------------------------- */
+.pagination { display: flex; gap: 0.4rem; margin-top: 1rem; }
+.pagination a, .pagination .page-courante {
+    padding: 0.25rem 0.6rem; border-radius: 5px; text-decoration: none;
+    border: 1px solid #cfd4dd; color: #23304a; background: #fff;
+}
+.pagination .page-courante { background: #23304a; color: #fff; border-color: #23304a; }
+
+/* --- Page de connexion --------------------------------------------------------- */
+body.connexion { display: flex; min-height: 100vh; align-items: center; justify-content: center; background: #23304a; }
+.boite-connexion {
+    background: #fff; border-radius: 10px; padding: 2rem;
+    width: min(380px, 92vw);
+}
+.boite-connexion h1 { font-size: 1.1rem; margin-bottom: 1rem; color: #23304a; }
+.boite-connexion h1 small { opacity: 0.55; font-weight: normal; }
+.boite-connexion label { display: block; margin: 0.8rem 0 0.2rem; font-size: 0.85rem; color: #444; }
+.boite-connexion input {
+    width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #cfd4dd;
+    border-radius: 6px; font-size: 1rem;
+}
+.boite-connexion button {
+    margin-top: 1.2rem; width: 100%; padding: 0.6rem;
+    background: #23304a; color: #fff; border: none; border-radius: 6px;
+    font-size: 1rem;
+}
+.erreur {
+    background: #fbeaea; color: #a4262c; border: 1px solid #edc9cb;
+    padding: 0.6rem 0.8rem; border-radius: 6px; margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+}

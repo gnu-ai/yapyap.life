@@ -1,0 +1,32 @@
+# ==============================================================================
+# yAp y Ap — Fichier de configuration (config/yapyap.toml)
+# ==============================================================================
+# À installer dans /etc/yapyap/yapyap.toml (convention POSIX des logiciels
+# serveur sous GNU/Linux). Le chemin est surchargeable par la variable
+# d'environnement YAPYAP_CONFIG.
+#
+# NE JAMAIS commiter les vrais mots de passe dans un dépôt : ce fichier
+# fourni est un modèle ; la production utilise des valeurs secrètes.
+# ==============================================================================
+
+[http]
+# Adresse d'écoute : "127.0.0.1" car Nginx, sur la même machine, fait office
+# de proxy inverse face à Internet. L'application n'est donc JAMAIS exposée
+# directement — elle n'a même pas besoin de gérer TLS.
+bind = "127.0.0.1"
+port = 8080
+max_body_bytes = 65536          # 64 Ko suffisent pour nos requêtes JSON
+
+[db]
+# Paramètres du serveur PostgreSQL tiers (voir deploy/README-deploiement.md).
+host = "127.0.0.1"
+port = 5432
+user = "yapyap"
+password = "yapyap_dev"
+dbname = "yapyap"
+max_connections = 10
+
+[geo]
+# Paramètres de la mise en relation géographique.
+default_radius_km = 5.0        # rayon de recherche par défaut
+max_radius_km = 50.0            # plafond anti-abus (protège les index SQL)

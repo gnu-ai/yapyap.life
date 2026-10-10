@@ -1,0 +1,32 @@
+yAp y Ap — Correctif n°2 : branchement de max_body_bytes (routes/mod.rs)
+==========================================================================
+
+Ce correctif ne concerne PLUS qu'un seul fichier : src/routes/mod.rs
+(le modèle mort Session a déjà été supprimé par le correctif précédent,
+qui s'était correctement appliqué à src/models/session.rs).
+
+Il corrige aussi l'erreur de compilation E0382 (« use of moved value:
+cfg ») rencontrée lors de l'application manuelle : la limite est
+désormais capturée dans `limite_corps` AVANT que `cfg` ne soit déplacé
+dans AppState — pattern Rust idiomatique, sans clone() superflu.
+
+Modifications :
+  1. import du middleware : use axum::extract::DefaultBodyLimit;
+  2. capture préalable : let limite_corps = cfg.http.max_body_bytes;
+  3. branchement au routeur :
+       .layer(DefaultBodyLimit::max(limite_corps))
+     (une seule chaîne d'appels, .with_state(state) unique en fin)
+
+Application, depuis la racine du projet (~/yapyap.life/yapyap) :
+    patch -p1 < yapyap-fix2.patch
+
+Vérification :
+    cargo test && YAPYAP_CONFIG=config/yapyap.toml cargo run
+
+Résultat attendu : compilation SANS avertissement, 4 tests verts,
+serveur démarré sur http://127.0.0.1:8080.
+
+Test optionnel du rejet 413 :
+    head -c 200000 /dev/zero | curl -s -X POST \
+      http://127.0.0.1:8080/api/auth/inscription \
+      -H 'Content-Type: application/json' --data-binary @-

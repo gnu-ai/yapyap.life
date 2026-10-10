@@ -1,0 +1,6 @@
+# 1. Compte et base dédiés
+sudo -u postgres psql -c "CREATE USER yapyap WITH PASSWORD 'yapyap_dev';"
+sudo -u postgres psql -c "CREATE DATABASE yapyap OWNER yapyap;"
+
+# 2. Schéma initial
+psql -h 127.0.0.1 -U yapyap -d yapyap -f migrations/001_init.sql

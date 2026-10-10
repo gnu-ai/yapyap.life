@@ -1,0 +1,53 @@
+# ==============================================================================
+# Fichier de manifeste du projet (nécessaire à Cargo, le gestionnaire de
+# paquets et l'outil de compilation officiel de Rust).
+# ------------------------------------------------------------------------------
+[package]
+name        = "yapyap"
+version     = "0.1.0"
+edition     = "2021"          # Édition du langage : Rust 2021 (modernité stable)
+description = "Serveur HTTP de mise en relation géographique (yAp yAp)"
+license     = "MIT"
+authors     = ["Maison Bap <contact@yapyap.life>"]
+
+# ------------------------------------------------------------------------------
+# Dépendances « logiciels serveurs » côté code :
+#   - tokio          : moteur d'exécution asynchrone (cœur du serveur HTTP)
+#   - axum           : framework web léger, construit sur tokio et hyper
+#   - tokio-postgres : pilote PostgreSQL asynchrone (dialogue avec le SGBD)
+#   - deadpool-postgres : pool de connexions réutilisables (performance)
+#   - serde / serde_json : (dé)sérialisation JSON des échanges HTTP
+#   - toml             : lecture du fichier de configuration
+#   - tracing / tracing-subscriber : journalisation structurée
+#   - argon2           : hachage sûr des mots de passe (aucun stockage en clair)
+#   - rand             : génération de sel cryptographique et de jetons
+#   - chrono           : manipulation des dates/heures (événements, sessions)
+# ------------------------------------------------------------------------------
+[dependencies]
+tokio            = { version = "1",    features = ["full"] }
+axum             = { version = "0.7", features = ["json"] }
+tokio-postgres   = { version = "0.7", features = ["with-chrono-0_4"] }
+deadpool-postgres = "0.13"
+serde            = { version = "1",    features = ["derive"] }
+serde_json       = "1"
+toml             = "0.8"
+tracing          = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+argon2           = "0.5"
+rand             = "0.8"
+chrono           = { version = "0.4", features = ["serde"] }
+thiserror        = "1"
+deadpool          = "0.12"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# ------------------------------------------------------------------------------
+# Profil « release » : optimisations maximales pour la production.
+# Le binaire obtenu est statique vis-à-vis de la bibliothèque standard Rust
+# (pas de dépendance à un interprteur ni à un runtime tiers) : c'est l'un des
+# grands atouts de Rust pour un déploiement serveur GNU/Linux sobre.
+# ------------------------------------------------------------------------------
+[profile.release]
+opt-level     = 3
+lto           = true
+strip         = true
+codegen-units = 1

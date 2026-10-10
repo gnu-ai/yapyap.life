@@ -1,0 +1,109 @@
+From: yAp y Ap
+Subject: [PATCH] Ménage des avertissements : suppression du modèle mort Session
+ et branchement de la limite de corps max_body_bytes
+
+Ce correctif élimine les deux avertissements de compilation :
+
+1. `warning: struct Session is never constructed`
+   Le dépôt src/db/sessions.rs renvoie directement le couple (jeton,
+   expiration) : la structure intermédiaire Session n'était plus utilisée.
+   Elle est supprimée ; seul TokenResponse (la réponse envoyée au client
+   à la connexion) reste.
+
+2. `warning: field max_body_bytes is never read`
+   Le champ de configuration était déclaré mais jamais appliqué. Le
+   middleware axum DefaultBodyLimit est désormais chaîné au routeur :
+   toute requête dont le corps dépasse la limite configurée
+   (http.max_body_bytes, en octets) est rejetée avec le statut HTTP 413
+   (Payload Too Large). Cette limite est cohérente avec la directive
+   client_max_body_size de la configuration Nginx fournie.
+
+Application :
+    patch -p1 < yapyap-fix.patch
+    cargo test
+    YAPYAP_CONFIG=config/yapyap.toml cargo run
+
+Vérification du 413 (optionnel) :
+    head -c 200000 /dev/zero | curl -s -X POST \
+      http://127.0.0.1:8080/api/auth/inscription \
+      -H 'Content-Type: application/json' --data-binary @-
+    -> doit répondre : 413 Payload Too Large
+---
+ src/models/session.rs | 16 ----------------
+ src/routes/mod.rs     |  8 ++++++++
+ 2 files changed, 8 insertions(+), 16 deletions(-)
+
+diff --git a/src/models/session.rs b/src/models/session.rs
+--- a/src/models/session.rs
++++ b/src/models/session.rs
+@@ -1,36 +1,27 @@
+ // ==============================================================================
+ // yAp y Ap — Modèle « Session » (src/models/session.rs)
+ // ==============================================================================
+ // Une session matérialise une connexion authentifiée : le client reçoit un
+ // jeton secret (chaîne aléatoire) et le présente à chaque requête dans
+ // l'en-tête HTTP « Authorization: Bearer <jeton> ». Le serveur vérifie en
+ // base que le jeton existe et n'a pas expiré.
+ //
+ // Cette approche « jeton opaque + table sessions » est simple, révocable à
+ // tout moment (supprimer la ligne), et ne nécessite aucun état côté client
+ // au-delà du jeton.
++//
++// NB : le dépôt src/db/sessions.rs renvoie directement le couple
++// (jeton, expiration) ; aucune structure intermédiaire n'est nécessaire
++// ici — seul le format de réponse au client (TokenResponse) subsiste.
+ // ==============================================================================
+ 
+ use chrono::{DateTime, Utc};
+ use serde::Serialize;
+ 
+-/// Vue interne d'une session (le jeton n'est JAMAIS renvoyé ensuite).
+-#[derive(Debug, Serialize)]
+-pub struct Session {
+-    pub jeton: String,
+-    pub utilisateur: i64,
+-    pub expire_le: DateTime<Utc>,
+-}
+-
+ /// Réponse renvoyée au client à la connexion : le jeton à conserver.
+ #[derive(Debug, Serialize)]
+ pub struct TokenResponse {
+     pub jeton: String,
+     pub expire_le: DateTime<Utc>,
+ }
+diff --git a/src/routes/mod.rs b/src/routes/mod.rs
+--- a/src/routes/mod.rs
++++ b/src/routes/mod.rs
+@@ -12,12 +12,14 @@
+ // favorise le travail en parallèle sur un projet d'équipe.
+ // ==============================================================================
+ 
+ pub mod auth;
+ pub mod users;
+ pub mod outings;
+ 
+ use crate::config::Config;
++use axum::extract::DefaultBodyLimit;
+ use axum::routing::{get, post};
+ use axum::Router;
+ use deadpool_postgres::Pool;
+@@ -51,9 +53,15 @@ pub fn build_router(pool: Pool, cfg: Config) -> Router {
+         // --- Sorties ----------------------------------------------------------
+         .route("/api/sorties",           post(outings::creer)
+                                               .get(outings::proches))
+         .route("/api/sorties/:id/participer", post(outings::participer))
+         .route("/api/sorties/:id/retirer",    post(outings::retirer))
++        // Limitation de la taille des corps de requête : les requêtes JSON
++        // de l'API sont petites ; tout corps dépassant la limite configurée
++        // (http.max_body_bytes) est rejeté en 413 (Payload Too Large) —
++        // protection simple contre les requêtes volumineuses, cohérente
++        // avec client_max_body_size de la configuration Nginx fournie.
++        .layer(DefaultBodyLimit::max(cfg.http.max_body_bytes))
+         .with_state(state)
+ }
+ 
+ /// GET /api/sante — répond { "statut": "ok" }. Volontairement minimal :
+ // la sonde doit fonctionner même si PostgreSQL est momentanément lent.
+ async fn sante() -> axum::Json<serde_json::Value> {
+-- 
+2.39.2
