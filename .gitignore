@@ -1,0 +1,6 @@
+# Rust : produits de compilation (régénérables par cargo build)
+target/
+
+# Environnements locaux
+.env
+*.log
